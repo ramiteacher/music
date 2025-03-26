@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>감성 LP 플레이어</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #3a3a3a, #5a5a5a, #3a3a3a);
+      font-family: 'Noto Serif KR', serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      color: #e0e0e0;
+    }
+    .vinyl-player-container {
+      position: relative;
+      width: 500px;
+      height: 500px;
+      perspective: 1000px;
+    }
+    .turntable {
+      width: 450px;
+      height: 450px;
+      background: linear-gradient(45deg, #444444, #282828);
+      border-radius: 10px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.7),  
+                  inset 0 2px 5px rgba(255,255,255,0.2);
+      padding: 25px;
+      position: relative;
+      transform: rotateX(10deg);
+      transform-style: preserve-3d;
+    }
+    .player {
+      text-align: center;
+      position: relative;
+      width: 400px;
+      padding: 20px;
+      margin-top: 100px; /* 플레이어 영역을 아래로 이동 */
+    }
+    .lp-wrapper {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto;
+    }
+    .lp {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #666 0%, #444 70%, #333 100%);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.5s ease;
+    }
+    .lp.playing {
+      animation: spin 5s linear infinite;
+    }
+    .lp::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, #f8f8f8 0%, #ccc 100%);
+      border-radius: 50%;
+      z-index: 2;
+      box-shadow: 0 0 10px rgba(255,255,255,0.6);
+    }
+    .lp::after {
+      display: none;
+    }
+    .lp img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      z-index: 0;
+      opacity: 0.7;
+      filter: saturate(1.4) brightness(1.2) contrast(1.1);
+    }
+    .tonearm-container {
+      position: absolute;
+      top: 30px;
+      right: -30px;
+      width: 150px;
+      height: 150px;
+      z-index: 10;
+    }
+    .tonearm {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 140px;
+      height: 15px;
+      background: linear-gradient(to bottom, #555, #333);
+      border-radius: 5px;
+      transform-origin: right center;
+      transform: rotate(15deg); /* 톤암 기본 위치 수정 */
+      transition: transform 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .tonearm::after {
+      content: '';
+      position: absolute;
+      right: 5px;
+      top: -5px;
+      width: 25px;
+      height: 25px;
+      background: radial-gradient(circle, #555, #222);
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .tonearm-head {
+      position: absolute;
+      left: 5px;
+      top: 5px;
+      width: 15px;
+      height: 5px;
+      background: #222;
+      border-radius: 2px;
+    }
+    .tonearm.on-record {
+      transform: rotate(-20deg); /* 톤암이 LP 위로 내려가는 방향 수정 */
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .title {
+      font-size: 1.5rem;
+      margin-top: 30px;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      opacity: 1;
+      color: #f0f0f0;
+      display: none; /* 하단의 중복 타이틀 숨김 */
+    }
+    .controls {
+      display: none;
+    }
+    .button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4),
+                  inset 0 1px 1px rgba(255,255,255,0.2);
+      transition: all 0.3s ease;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.5),
+                  inset 0 1px 1px rgba(255,255,255,0.1);
+    }
+    .button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5),
+                  inset 0 1px 1px rgba(255,255,255,0.1);
+    }
+    .button i {
+      color: #e0e0e0;
+      font-size: 20px;
+    }
+    .play-button {
+      width: 60px;
+      height: 60px;
+    }
+    .turntable::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, 
+                  rgba(255,255,255,0.05) 0%, 
+                  rgba(255,255,255,0) 40%);
+      border-radius: 10px;
+      pointer-events: none;
+    }
+    .ambient-light {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 50%, 
+                  rgba(160, 120, 220, 0.25) 0%, 
+                  rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 2s ease;
+    }
+    .ambient-light.on {
+      opacity: 1;
+    }
+    audio {
+      display: none;
+    }
+    .tonearm.touch-1 {
+      transform: rotate(5deg);
+    }
+    .tonearm.touch-2 {
+      transform: rotate(-5deg);
+    }
+    .tonearm.touch-3 {
+      transform: rotate(-15deg);
+    }
+    .tonearm.touch-4 {
+      transform: rotate(-20deg);
+    }
+    .tonearm.touch-5 {
+      transform: rotate(-25deg);
+    }
+    .turntable-title {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+      z-index: 10;
+      letter-spacing: 3px;
+    }
+    
+    .turntable-subtitle {
+      font-size: 1rem;
+      opacity: 0.9;
+      margin-top: 8px;
+      font-weight: normal;
+      letter-spacing: 2px;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="vinyl-player-container">
+    <div class="turntable">
+      <div class="turntable-title">
+        To All My Blanches'
+        <div class="turntable-subtitle" id="song-subtitle">Vinyl Collection</div>
+      </div>
+      
+      <div class="player">
+        <div class="lp-wrapper">
+          <div class="lp">
+            <img src="sex.jpg" alt="LP image">
+          </div>
+          <div class="tonearm-container">
+            <div class="tonearm">
+              <div class="tonearm-head"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ambient-light"></div>
+    </div>
+  </div>
+  
+  <audio id="audio-a">
+    <source src="a.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="audio-aa">
+    <source src="aa.mp3" type="audio/mpeg">
+  </audio>
+  
+  <script>
+    let clickCount = 0;
+    const lp = document.querySelector('.lp');
+    const tonearm = document.querySelector('.tonearm');
+    const audioA = document.getElementById('audio-a');
+    const audioAA = document.getElementById('audio-aa');
+    const ambientLight = document.querySelector('.ambient-light');
+    let currentAudio = null;
+    
+    // LP와 톤암 컨테이너를 모두 터치 영역으로 활용
+    const touchArea = document.querySelector('.turntable');
+    
+    touchArea.addEventListener('click', () => {
+      // 클릭 횟수 증가 (1, 2, 3 순환)
+      clickCount = (clickCount % 3) + 1;
+      
+      // 이전 톤암 위치 클래스 모두 제거
+    for (let i = 1; i <= 5; i++) {
+      tonearm.classList.remove(`touch-${i}`);
+    }
+    
+    // 이전 오디오 중지
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    
+    if (clickCount === 1) {
+    // 첫 번째 클릭: aa.mp3 재생, 톤암 첫 번째 위치
+    tonearm.classList.add('touch-2');
+    
+    setTimeout(() => {
+      lp.classList.add('playing');
+      ambientLight.classList.add('on');
+      audioAA.play().catch(err => console.log('Audio play failed:', err));
+      currentAudio = audioAA;
+      document.getElementById('song-subtitle').textContent = 'Blanche.';
+    }, 800);
+    }
+
+    else if (clickCount === 2) {
+    // 두 번째 클릭: a.mp3 재생, 톤암 더 내려감
+    tonearm.classList.add('touch-4');
+    
+    setTimeout(() => {
+      audioA.play().catch(err => console.log('Audio play failed:', err));
+      currentAudio = audioA;
+      document.getElementById('song-subtitle').textContent = '아직은 풀리지 않았나봐 날씨가';
+    }, 800);
+    }
+    else if (clickCount === 3) {
+    // 세 번째 클릭: 톤암 원위치, 재생 중지
+    tonearm.classList.remove('touch-4');
+    tonearm.classList.remove('touch-2');
+    
+    // 오디오 중지
+    ambientLight.classList.remove('on');
+    
+    // LP는 회전 유지
+    clickCount = 0; // 카운트 리셋
+    document.getElementById('song-subtitle').textContent = 'Vinyl Collection';
+    }
+    // 오디오 재생 완료시 이벤트 처리
+    audioA.addEventListener('ended', () => {
+      // 오디오 종료시에도 LP는 계속 회전하도록 함
+    });
+    
+
+  });
+  </script>
+</body>
+</html>
